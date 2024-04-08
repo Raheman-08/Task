@@ -16,9 +16,7 @@ const Category = () => {
       {/* Main Content */}
       <View style={styles.content}>
         <Categorydata />
-        <View style={styles.dataTextContainer}>
-          <Text style={styles.dataText}>Data</Text>
-        </View>
+      
       </View>
     </SafeAreaView>
 

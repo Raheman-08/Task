@@ -1,115 +1,179 @@
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image } from 'react-native';
-import React, { useEffect, useState } from 'react';
+import React, {useState, useEffect} from 'react';
+import {View, FlatList, TouchableOpacity, Text, StyleSheet} from 'react-native';
 import axios from 'axios';
 
-const Categorydata = () => {
-  const [categories, setCategories] = useState([]);
+const CategorySelection = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [categories, setCategories] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
   const [products, setProducts] = useState([]);
 
+  // Fetch categories from API
   useEffect(() => {
-    fetchData();
+    const fetchCategories = async () => {
+      try {
+        const response = await axios.post(
+          'http://esptiles.imperoserver.in/api/API/Product/DashBoard',
+          {
+            CategoryId: 0,
+            DeviceManufacturer: 'Google',
+            DeviceModel: 'Android SDK built for x86',
+            DeviceToken: '',
+            PageIndex: 1,
+          },
+        );
+        console.log(response.data.Result);
+        setCategories(response.data.Result.Category);
+      } catch (error) {
+        console.log('Error while fetching categories', error);
+      }
+    };
+
+    fetchCategories();
   }, []);
 
-  const fetchData = async () => {
-    try {
-      const response = await axios.get('http://esptiles.imperoserver.in/api/API/Product/DashBoard');
-      const categoryNames = response.data.Result.Category.map(cat => cat.Name);
-      setCategories(categoryNames);
-    } catch (error) {
-      console.log('Error while fetching the data', error);
-    }
-  };
+  // Fetch subcategories and products for selected category
+  useEffect(() => {
+    const fetchSubcategoriesAndProducts = async () => {
+      if (selectedCategory) {
+        try {
+          const subcategoryResponse = await axios.post(
+            'http://esptiles.imperoserver.in/api/API/Product/DashBoard',
+            {
+              CategoryId: selectedCategory.ID,
+              PageIndex: 2,
+            },
+          );
+          const subcategoryData = subcategoryResponse.data.Result;
 
-  const fetchSubcategoriesAndProducts = async (selectedCategory) => {
-    try {
-      const response = await axios.get(`http://esptiles.imperoserver.in/api/API/Product/ProductList?category=${selectedCategory}`);
-      setSubcategories(response.data.Result.Subcategories);
-      setProducts(response.data.Result.Products);
-    } catch (error) {
-      console.log('Error while fetching subcategories and products', error);
-    }
-  };
+          setSubcategories(subcategoryData.Subcategories);
 
-  const handleCategorySelect = (category) => {
+          const productResponse = await axios.post(
+            'http://esptiles.imperoserver.in/api/API/Product/ProductList',
+            {
+              PageIndex: 2,
+              SubCategoryId: subcategoryData.Subcategories[0].ID, // Assuming the first subcategory
+            },
+          );
+          const productData = productResponse.data.Result;
+          setProducts(productData.Products);
+        } catch (error) {
+          console.log('Error while fetching subcategories and products', error);
+          setSubcategories([]);
+          setProducts([]);
+        }
+      }
+    };
+
+    fetchSubcategoriesAndProducts();
+  }, [selectedCategory]);
+
+  const handleCategorySelect = category => {
     setSelectedCategory(category);
-    fetchSubcategoriesAndProducts(category);
   };
+
+  const renderSubcategory = subcategory => (
+    <View key={subcategory.ID} style={styles.subcategoryContainer}>
+      <Text style={styles.subcategoryTitle}>{subcategory.Name}</Text>
+      <FlatList
+        horizontal
+        data={products.filter(
+          product => product.Subcategory === subcategory.Name,
+        )}
+        keyExtractor={item => item.ID.toString()}
+        renderItem={({item}) => (
+          <View style={styles.productContainer}>
+            <View style={styles.productImage} />
+            <Text style={styles.productName}>{item.Name}</Text>
+          </View>
+        )}
+      />
+    </View>
+  );
 
   return (
-    <View>
-      {categories && categories.length > 0 ? (
-        <FlatList
-          horizontal
-          data={categories}
-          keyExtractor={(item, index) => index.toString()}
-          renderItem={({ item }) => (
-            <View style={styles.dataStyle}>
-              <TouchableOpacity
-                style={styles.button}
-                onPress={() => handleCategorySelect(item)}>
-                <Text style={styles.dataText}>{item}</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        />
-      ) : (
-        <Text>No categories found</Text>
-      )}
-
-      {selectedCategory && (
-        <View>
-          <Text>Selected Category: {selectedCategory}</Text>
-          {subcategories.map((subcategory, index) => (
-            <View key={index}>
-              <Text>{subcategory.Name}</Text>
-              <FlatList
-                horizontal
-                data={products.filter(product => product.Subcategory === subcategory.Name)}
-                keyExtractor={(item, index) => index.toString()}
-                renderItem={({ item }) => (
-                  <View style={styles.productContainer}>
-                    <Image
-                      source={{ uri: item.Image }} 
-                      style={styles.productImage}
-                    />
-                    <Text>{item.Name}</Text>
-                  </View>
-                )}
-              />
-            </View>
-          ))}
-        </View>
-      )}
+    <View style={styles.container}>
+      <FlatList
+        data={categories}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        renderItem={({item}) => (
+          <TouchableOpacity
+            style={[
+              styles.item,
+              item.ID === selectedCategory?.ID && styles.selectedItem, // Apply selected styles conditionally
+            ]}
+            onPress={() => handleCategorySelect(item)}>
+            <Text
+              style={[
+                styles.itemText,
+                item.ID === selectedCategory?.ID && styles.selectedItemText,
+              ]}>
+              {item.Name}
+            </Text>
+          </TouchableOpacity>
+        )}
+        keyExtractor={item => item.ID.toString()}
+      />
+      <View style={styles.subcategoryList}>
+        {subcategories.map(subcategory => renderSubcategory(subcategory))}
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  dataStyle: {
-    margin: 10,
+  container: {
+    marginTop: 20,
   },
-  dataText: {
+  item: {
+    borderWidth: 1,
+    borderColor: 'black',
+    marginHorizontal: 5,
+    borderRadius: 5,
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    height: 50,
+    borderRadius: 50,
+  },
+  itemText: {
+    fontSize: 16,
+    color: 'black',
+    padding: 10,
+  },
+  selectedItem: {
+    backgroundColor: 'black',
+  },
+  selectedItemText: {
     color: 'white',
   },
-  button: {
-    borderWidth: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    alignSelf: 'flex-start',
-    marginLeft: 1,
-    borderRadius: 100,
+  subcategoryList: {
+    marginTop: 20,
+  },
+  subcategoryContainer: {
+    marginBottom: 10,
+  },
+  subcategoryTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 5,
   },
   productContainer: {
-    margin: 10,
     alignItems: 'center',
+    marginVertical: 5,
+    marginRight: 20, // Add margin between each product
   },
   productImage: {
-    width: 100,
-    height: 100,
-    resizeMode: 'cover',
+    width: 100, // Increase the size of the product box
+    height: 100, // Increase the size of the product box
+    backgroundColor: 'blue', // Sample color, replace with actual product image
+    marginBottom: 5,
+  },
+  productName: {
+    fontSize: 14,
+    color: 'black',
   },
 });
 
-export default Categorydata;
+export default CategorySelection;

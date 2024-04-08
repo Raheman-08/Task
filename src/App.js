@@ -5,7 +5,7 @@ import ColorScreen from './screens/ColorScreen';
 
 export default function App() {
   return(
-    // <Category />
-    <ColorScreen />
+    <Category />
+    // <ColorScreen />
   );
 }
