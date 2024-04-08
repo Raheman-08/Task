@@ -1,24 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, SafeAreaView, StyleSheet, StatusBar, FlatList, TouchableOpacity } from 'react-native';
-import axios from 'axios';
+import React from 'react';
+import { View, Text, SafeAreaView, StyleSheet , StatusBar, TouchableOpacity} from 'react-native';
+import Categorydata from '../components/Categorydata';
+
+
 
 const Category = () => {
-  const [data, setData] = useState([]);
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
-    try {
-      const response = await axios.get('http://esptiles.imperoserver.in/api/API/Product/DashBoard');
-      setData(response.data);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    }
-  };
-
   return (
+
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
@@ -27,20 +15,13 @@ const Category = () => {
 
       {/* Main Content */}
       <View style={styles.content}>
-        <FlatList
-          horizontal
-          data={data}
-          renderItem={({ item }) => (
-            <View style={styles.dataStyle}>
-              <TouchableOpacity>
-                <Text style={styles.dataText}>{item.name}</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-          keyExtractor={item => item.id}
-        />
+        <Categorydata />
+        <View style={styles.dataTextContainer}>
+          <Text style={styles.dataText}>Data</Text>
+        </View>
       </View>
     </SafeAreaView>
+
   );
 };
 
@@ -61,6 +42,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',
+    flex: 1,
     textAlign: 'center'
   },
   content: {
@@ -74,9 +56,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  dataStyle: {
-    paddingHorizontal: 18,
-  }
+  
 });
 
 export default Category;
