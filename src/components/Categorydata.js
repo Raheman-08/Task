@@ -71,7 +71,7 @@ const Categorydata = () => {
                 renderItem={({ item }) => (
                   <View style={styles.productContainer}>
                     <Image
-                      source={{ uri: item.Image }} // Assuming Image is a field in your product object
+                      source={{ uri: item.Image }} 
                       style={styles.productImage}
                     />
                     <Text>{item.Name}</Text>
